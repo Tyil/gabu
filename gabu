@@ -1,0 +1,112 @@
+#! /usr/bin/env perl
+
+use strict;
+use warnings;
+
+use LWP::UserAgent;
+use XML::RSS::Parser;
+use YAML::Tiny;
+
+my $config_file = "/etc/gabu.yaml";
+
+# create initial config if required
+if (! -f $config_file) {
+	open(my $fh, ">", $config_file);
+
+	if (!$fh) {
+		die "Could not write initial config at $config_file\n";
+	}
+
+	my $bare_config = YAML::Tiny->new();
+
+	$bare_config->[0] = {
+		watchdir => "/tmp",
+		timeout => 300,
+		feeds => [
+			{
+				"url" => "https://animebytes.tv/feed/rss_torrents_anime/",
+				"regexes" => [
+					"boku no pico"
+				]
+			}
+		]
+	};
+
+	$bare_config->write($config_file);
+
+	print "Written config file at $config_file\n";
+
+	exit(1);
+}
+
+# load configuration
+my $yaml = YAML::Tiny->read($config_file);
+
+# create a UA
+my $ua = LWP::UserAgent->new();
+$ua->agent("gabu/1.0.0");
+
+while (1) {
+	foreach my $feed ($yaml->[0]->{feeds}) {
+		# fetch the rss feed
+		my $response = $ua->get($feed->[0]->{url});
+
+		if (!$response->is_success) {
+			warn $response->status_line;
+		}
+
+		# parse the feed
+		my $parser = XML::RSS::Parser->new();
+		my $rss = $parser->parse_string($response->decoded_content()) or die $parser->errstr;
+
+		foreach my $node ($rss->query("//item")) {
+			chomp(my $title = $node->query("title")->text_content);
+
+			my $found = 0;
+			my @regexes = @{$feed->[0]->{regexes}};
+
+			foreach my $regex (@regexes) {
+				if ($title =~ m/$regex/gi) {
+					$found = 1;
+					last;
+				}
+			}
+
+			if (!$found) {
+				next;
+			}
+
+			chomp(my $link = $node->query("link")->text_content);
+
+			my $torrent = $ua->get($link);
+
+			if (!$torrent->is_success) {
+				warn $torrent->status_line . "\n";
+				next;
+			}
+
+			(my $filename = $title) =~ s/ //g;
+			my $file = "$yaml->[0]->{watchdir}/$filename.torrent";
+
+			open(my $fh, ">", $file);
+
+			if (!$fh) {
+				warn "Could not open filehandle at $file\n";
+				next;
+			}
+
+			print $fh $torrent->decoded_content();
+
+			close($fh);
+
+			print($file . "\n");
+		}
+	}
+
+	if ($yaml->[0]->{timeout} == 0) {
+		exit(0);
+	}
+
+	sleep($yaml->[0]->{timeout});
+}
+
