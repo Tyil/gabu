@@ -13,10 +13,11 @@ make install
 ```
 
 ### Dependencies
+- `LWP::Protocol::https` (if you want to use feeds over HTTPS)
+- `LWP::UserAgent`
+- `Term::ANSIColor`
 - `XML::RSS::Parser`
 - `YAML::Tiny`
-- `LWP::UserAgent`
-- `LWP::Protocol::https` (if you want to use feeds over HTTPS)
 
 ## Configuration
 Edit the YAML file at `/etc/gabu.yaml` to your leisure. Most importantly, make
