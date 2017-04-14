@@ -15,7 +15,7 @@ if (! -f $config_file) {
 	open(my $fh, ">", $config_file);
 
 	if (!$fh) {
-		die color("bold red") . "Could not write initial config at $config_file\n";
+		die color("bold red") . "Could not write initial config at $config_file" . color("reset") . "\n";
 	}
 
 	my $bare_config = YAML::Tiny->new();
@@ -46,30 +46,44 @@ my $yaml = YAML::Tiny->read($config_file);
 
 # create a UA
 my $ua = LWP::UserAgent->new();
-$ua->agent("gabu/1.1.0");
+$ua->agent("gabu/1.1.1");
+
+# logging functions
+sub colored_message()
+{
+	my $color = shift;
+	my $message = shift;
+
+	return color($color) . $message . color("reset") . "\n";
+}
 
 while (1) {
 	foreach my $feed ($yaml->[0]->{feeds}) {
 		if ($yaml->[0]->{verbose}) {
-			print(color("blue") . "$feed->[0]->{url}\n");
+			print(&colored_message("blue", $feed->[0]->{url}));
 		}
 
 		# fetch the rss feed
 		my $response = $ua->get($feed->[0]->{url});
 
 		if (!$response->is_success) {
-			warn color("red") . "$response->status_line\n";
+			warn(&colored_message("red", $response->status_line));
 		}
 
 		# parse the feed
 		my $parser = XML::RSS::Parser->new();
-		my $rss = $parser->parse_string($response->decoded_content()) or warn color("red") . "$parser->errstr\n";
+		my $rss = $parser->parse_string($response->decoded_content());
+			
+		if (!$rss) {
+			warn(&colored_message("red", $parser->errstr));
+			next;
+		}
 
 		foreach my $node ($rss->query("//item")) {
 			chomp(my $title = $node->query("title")->text_content);
 
 			if ($yaml->[0]->{verbose}) {
-				print(" " . color("white") . "$title\n");
+				print(&colored_message("white", " $title"));
 			}
 
 			my $found = 0;
@@ -78,7 +92,7 @@ while (1) {
 			foreach my $regex (@regexes) {
 				if ($title =~ m/$regex/gi) {
 					if ($yaml->[0]->{verbose}) {
-						print("  " . color("green") . "$regex\n");
+						print(&colored_message("green", $regex));
 					}
 
 					$found = 1;
@@ -95,7 +109,7 @@ while (1) {
 			my $torrent = $ua->get($link);
 
 			if (!$torrent->is_success) {
-				warn color("red") . "$torrent->status_line\n";
+				warn(&colored_message("red", $torrent->status_line));
 				next;
 			}
 
@@ -105,7 +119,7 @@ while (1) {
 			open(my $fh, ">", $file);
 
 			if (!$fh) {
-				warn color("red") . "Could not open filehandle at $file\n";
+				warn(&colored_message("red", "Could not open filehandle at $file"));
 				next;
 			}
 
@@ -113,7 +127,7 @@ while (1) {
 
 			close($fh);
 
-			print("   " . color("bold blue") . $file . "\n");
+			print(&colored_message("bold blue", "   $file"));
 		}
 	}
 
