@@ -5,20 +5,20 @@ $|++;
 use strict;
 use warnings;
 
+use Cwd;
 use LWP::UserAgent;
 use Term::ANSIColor;
 use XML::RSS::Parser;
 use YAML::Tiny;
 
 # globals
-my $config_file = "/etc/gabu.yaml";
 my $yaml;
 
 # bind interrupt handlers
-$SIG{USR1} = \&reload_config;
+$SIG{USR1} = \&load_config;
 
 # initial config load
-&reload_config();
+&load_config();
 
 # create a UA
 my $ua = LWP::UserAgent->new();
@@ -33,11 +33,38 @@ sub colored_message()
 	return color($color) . $message . color("reset") . "\n";
 }
 
-sub reload_config
+sub load_config
 {
-	$yaml = YAML::Tiny->read($config_file);
+	my @files;
 
-	print(&colored_message("white", "Reloaded config at $config_file"))
+	if (defined($ENV{XDG_CONFIG_HOME})) {
+		push(@files, $ENV{XDG_CONFIG_HOME} . "/gabu.yaml");
+	}
+
+	push(@files, (
+		"$ENV{HOME}/.config/gabu.yaml",
+		"/usr/local/etc/gabu.yaml",
+		"/etc/gabu.yaml",
+		Cwd::abs_path($0) . "/../etc/gabu.yaml"
+	));
+
+	foreach my $file (@files) {
+		if (-f $file) {
+			$yaml = YAML::Tiny->read($file);
+
+			print(&colored_message("white", "Loaded config at $file"));
+
+			return;
+		}
+	}
+
+	print(&colored_message("bold red", "Could not find a configuration file:"));
+
+	foreach my $file (@files) {
+		print("\t$file\n");
+	}
+
+	die();
 }
 
 while (1) {
