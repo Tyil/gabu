@@ -17,37 +17,6 @@ my $yaml;
 # bind interrupt handlers
 $SIG{USR1} = \&reload_config;
 
-# create initial config if required
-if (! -f $config_file) {
-	open(my $fh, ">", $config_file);
-
-	if (!$fh) {
-		die(&colored_message("bold red", "Could not write initial config at $config_file"));
-	}
-
-	my $bare_config = YAML::Tiny->new();
-
-	$bare_config->[0] = {
-		watchdir => "/tmp",
-		timeout => 300,
-		verbose => 0,
-		feeds => [
-			{
-				"url" => "https://animebytes.tv/feed/rss_torrents_anime/",
-				"regexes" => [
-					"boku no pico"
-				]
-			}
-		]
-	};
-
-	$bare_config->write($config_file);
-
-	print("Written config file at $config_file\n");
-
-	exit(1);
-}
-
 # initial config load
 &reload_config();
 
