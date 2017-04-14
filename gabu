@@ -8,7 +8,12 @@ use Term::ANSIColor;
 use XML::RSS::Parser;
 use YAML::Tiny;
 
+# globals
 my $config_file = "/etc/gabu.yaml";
+my $yaml;
+
+# bind interrupt handlers
+$SIG{USR1} = \&reload_config;
 
 # create initial config if required
 if (! -f $config_file) {
@@ -41,12 +46,12 @@ if (! -f $config_file) {
 	exit(1);
 }
 
-# load configuration
-my $yaml = YAML::Tiny->read($config_file);
+# initial config load
+&reload_config();
 
 # create a UA
 my $ua = LWP::UserAgent->new();
-$ua->agent("gabu/1.1.2");
+$ua->agent("gabu/1.2.0");
 
 # logging functions
 sub colored_message()
@@ -55,6 +60,13 @@ sub colored_message()
 	my $message = shift;
 
 	return color($color) . $message . color("reset") . "\n";
+}
+
+sub reload_config
+{
+	$yaml = YAML::Tiny->read($config_file);
+
+	print(&colored_message("white", "Reloaded config at $config_file"))
 }
 
 while (1) {
@@ -83,7 +95,7 @@ while (1) {
 			chomp(my $title = $node->query("title")->text_content);
 
 			if ($yaml->[0]->{verbose}) {
-				print(&colored_message("white", " $title"));
+				print(&colored_message("bright_white", " $title"));
 			}
 
 			my $found = 0;
