@@ -1,15 +1,20 @@
 #! /usr/bin/env perl
 
-$|++;
-
 use strict;
+use utf8;
 use warnings;
 
 use Cwd;
+use Date::Parse;
 use LWP::UserAgent;
 use Term::ANSIColor;
 use XML::RSS::Parser;
 use YAML::Tiny;
+
+# setup the perl environment
+$|++;
+
+binmode STDOUT, ":utf8";
 
 # globals
 my $yaml;
@@ -22,7 +27,7 @@ $SIG{USR1} = \&load_config;
 
 # create a UA
 my $ua = LWP::UserAgent->new();
-$ua->agent("gabu/1.2.1");
+$ua->agent("gabu/1.3.0");
 
 # logging functions
 sub colored_message()
@@ -68,6 +73,28 @@ sub load_config
 }
 
 while (1) {
+	# read timers
+	my %timers;
+	my $timer_file = $yaml->[0]->{timers} // "/var/lib/gabu/timers";
+
+	{
+		open (my $fh, "<", $timer_file) or do {
+			warn &colored_message("red", "Could not open $timer_file: $!");
+			last;
+		};
+
+		while (<$fh>) {
+			chomp;
+
+			my @megumin = split("\t", $_);
+
+			$timers{$megumin[0]} = $megumin[1];
+		}
+
+		close($fh);
+	}
+
+	# go through all feeds
 	my @feeds = @{$yaml->[0]->{feeds}};
 
 	foreach my $feed (@feeds) {
@@ -85,13 +112,26 @@ while (1) {
 		# parse the feed
 		my $parser = XML::RSS::Parser->new();
 		my $rss = $parser->parse_string($response->decoded_content());
-			
+
 		if (!$rss) {
 			warn(&colored_message("red", $parser->errstr));
 			next;
 		}
 
+		my $new_timer = $timers{$feed->{url}} // 0;
+
 		foreach my $node ($rss->query("//item")) {
+			# skip all items which are before our current timestamp
+			my $current = str2time($node->query("pubDate")->text_content);
+
+			if (defined($timers{$feed->{url}}) && $current <= $timers{$feed->{url}}) {
+				next;
+			}
+
+			# keep track of new timestamp
+			$new_timer = $current if $current > $new_timer;
+
+			# check current item against regexes
 			chomp(my $title = $node->query("title")->text_content);
 
 			if ($yaml->[0]->{verbose}) {
@@ -107,6 +147,7 @@ while (1) {
 						print(&colored_message("green", "  $regex"));
 					}
 
+					# mark this item as wanted
 					$found = 1;
 					last;
 				}
@@ -116,6 +157,7 @@ while (1) {
 				next;
 			}
 
+			# get the torrent
 			chomp(my $link = $node->query("link")->text_content);
 
 			my $torrent = $ua->get($link);
@@ -125,9 +167,11 @@ while (1) {
 				next;
 			}
 
+			# generate a safer filename
 			(my $filename = $title) =~ s/ //g;
 			my $file = "$yaml->[0]->{watchdir}/$filename.torrent";
 
+			# save the torrent file
 			open(my $fh, ">", $file);
 
 			if (!$fh) {
@@ -141,8 +185,26 @@ while (1) {
 
 			print(&colored_message("bold blue", "   $file"));
 		}
+
+		# apply new timestamp to timers hash
+		$timers{$feed->{url}} = $new_timer;
 	}
 
+	# save new timers
+	{
+		open (my $fh, ">", $timer_file) or do {
+			warn(&colored_message("red", "Could not open $timer_file: $!"));
+			last;
+		};
+
+		foreach my $timer (keys %timers) {
+			print $fh "$timer\t$timers{$timer}\n";
+		}
+
+		close($fh);
+	}
+
+	# wait a bit for the next run
 	if ($yaml->[0]->{timeout} == 0) {
 		exit(0);
 	}
