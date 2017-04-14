@@ -20,7 +20,7 @@ if (! -f $config_file) {
 	open(my $fh, ">", $config_file);
 
 	if (!$fh) {
-		die color("bold red") . "Could not write initial config at $config_file" . color("reset") . "\n";
+		die(&colored_message("bold red", "Could not write initial config at $config_file"));
 	}
 
 	my $bare_config = YAML::Tiny->new();
