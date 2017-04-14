@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use feature "say";
 
 use LWP::UserAgent;
 use Term::ANSIColor;
@@ -51,7 +52,7 @@ if (! -f $config_file) {
 
 # create a UA
 my $ua = LWP::UserAgent->new();
-$ua->agent("gabu/1.2.0");
+$ua->agent("gabu/1.2.1");
 
 # logging functions
 sub colored_message()
@@ -70,13 +71,15 @@ sub reload_config
 }
 
 while (1) {
-	foreach my $feed ($yaml->[0]->{feeds}) {
+	my @feeds = @{$yaml->[0]->{feeds}};
+
+	foreach my $feed (@feeds) {
 		if ($yaml->[0]->{verbose}) {
-			print(&colored_message("blue", $feed->[0]->{url}));
+			print(&colored_message("blue", $feed->{url}));
 		}
 
 		# fetch the rss feed
-		my $response = $ua->get($feed->[0]->{url});
+		my $response = $ua->get($feed->{url});
 
 		if (!$response->is_success) {
 			warn(&colored_message("red", $response->status_line));
@@ -99,7 +102,7 @@ while (1) {
 			}
 
 			my $found = 0;
-			my @regexes = @{$feed->[0]->{regexes}};
+			my @regexes = @{$feed->{regexes}};
 
 			foreach my $regex (@regexes) {
 				if ($title =~ m/$regex/gi) {
