@@ -23,6 +23,11 @@ make install
 Edit the YAML file at `/etc/gabu.yaml` to your leisure. Most importantly, make
 sure you have a proper URL defined for the feed(s) you want to keep track of.
 
+### Regexes
+The `regexes` key for a given feed are directly dropped into Perl. As such, if
+you want to match certain characters literally, such as `(`, you must escape
+them appropriately, in this case as `\(`.
+
 ## Running
 Simply run the `gabu` file after setting up the configuration
 
