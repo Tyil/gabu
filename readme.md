@@ -36,7 +36,8 @@ them appropriately, in this case as `\(`.
 
 ## Running
 Simply run `gabu` after setting up the configuration. If you did not run `make
-install`, you have to make sure the `gabu` file is executable, then run this.
+install`, you have to make sure the `gabu` file is executable with `chmod +x
+gabu`, then run it with `./gabu`.
 
 ## License
 This program is free software: you can redistribute it and/or modify it under
