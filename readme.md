@@ -23,13 +23,20 @@ make install
 Edit the YAML file at `/etc/gabu.yaml` to your leisure. Most importantly, make
 sure you have a proper URL defined for the feed(s) you want to keep track of.
 
+### Timeout
+By default, the script runs continuously, and goes through all feeds after 5
+minutes. If you set the `timeout` to `0`, it will only run once, then exit. Any
+value higher than `0` will make the script wait for so many seconds before
+starting over.
+
 ### Regexes
 The `regexes` key for a given feed are directly dropped into Perl. As such, if
 you want to match certain characters literally, such as `(`, you must escape
 them appropriately, in this case as `\(`.
 
 ## Running
-Simply run the `gabu` file after setting up the configuration
+Simply run `gabu` after setting up the configuration. If you did not run `make
+install`, you have to make sure the `gabu` file is executable, then run this.
 
 ## License
 This program is free software: you can redistribute it and/or modify it under
