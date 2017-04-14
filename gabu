@@ -46,7 +46,7 @@ my $yaml = YAML::Tiny->read($config_file);
 
 # create a UA
 my $ua = LWP::UserAgent->new();
-$ua->agent("gabu/1.1.1");
+$ua->agent("gabu/1.1.2");
 
 # logging functions
 sub colored_message()
@@ -92,7 +92,7 @@ while (1) {
 			foreach my $regex (@regexes) {
 				if ($title =~ m/$regex/gi) {
 					if ($yaml->[0]->{verbose}) {
-						print(&colored_message("green", $regex));
+						print(&colored_message("green", "  $regex"));
 					}
 
 					$found = 1;
