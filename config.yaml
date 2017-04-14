@@ -1,0 +1,8 @@
+watchdir: /tmp
+timeout: 300
+verbose: false
+feeds:
+  - url: https://animebytes.tv/feed/rss_torrents_anime/
+    regexes:
+      - boku no pico
+
