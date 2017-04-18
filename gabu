@@ -4,6 +4,7 @@ use strict;
 use utf8;
 use warnings;
 
+use Carp;
 use Cwd;
 use Date::Parse;
 use LWP::UserAgent;
@@ -69,7 +70,7 @@ sub load_config
 		print("\t$file\n");
 	}
 
-	die();
+	croak;
 }
 
 while (1) {
@@ -79,7 +80,7 @@ while (1) {
 
 	{
 		open (my $fh, "<", $timer_file) or do {
-			warn &colored_message("red", "Could not open $timer_file: $!");
+			carp &colored_message("red", "Could not open $timer_file: $!");
 			last;
 		};
 
@@ -106,7 +107,7 @@ while (1) {
 		my $response = $ua->get($feed->{url});
 
 		if (!$response->is_success) {
-			warn(&colored_message("red", $response->status_line));
+			carp(&colored_message("red", $response->status_line));
 		}
 
 		# parse the feed
@@ -114,7 +115,7 @@ while (1) {
 		my $rss = $parser->parse_string($response->decoded_content());
 
 		if (!$rss) {
-			warn(&colored_message("red", $parser->errstr));
+			carp(&colored_message("red", $parser->errstr));
 			next;
 		}
 
@@ -142,7 +143,7 @@ while (1) {
 			my @regexes = @{$feed->{regexes}};
 
 			foreach my $regex (@regexes) {
-				if ($title =~ m/$regex/gi) {
+				if ($title =~ m/$regex/gix) {
 					if ($yaml->[0]->{verbose}) {
 						print(&colored_message("green", "  $regex"));
 					}
@@ -163,7 +164,7 @@ while (1) {
 			my $torrent = $ua->get($link);
 
 			if (!$torrent->is_success) {
-				warn(&colored_message("red", $torrent->status_line));
+				carp(&colored_message("red", $torrent->status_line));
 				next;
 			}
 
@@ -175,7 +176,7 @@ while (1) {
 			open(my $fh, ">", $file);
 
 			if (!$fh) {
-				warn(&colored_message("red", "Could not open filehandle at $file"));
+				carp(&colored_message("red", "Could not open filehandle at $file"));
 				next;
 			}
 
@@ -193,7 +194,7 @@ while (1) {
 	# save new timers
 	{
 		open (my $fh, ">", $timer_file) or do {
-			warn(&colored_message("red", "Could not open $timer_file: $!"));
+			carp(&colored_message("red", "Could not open $timer_file: $!"));
 			last;
 		};
 
