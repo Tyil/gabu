@@ -20,7 +20,7 @@ binmode STDOUT, ":utf8";
 my $yaml;
 
 # bind interrupt handlers
-$SIG{USR1} = \&load_config;
+local $SIG{USR1} = \&load_config;
 
 # initial config load
 &load_config();
