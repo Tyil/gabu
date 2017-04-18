@@ -1,5 +1,9 @@
-severity = 3
+severity = 2
 theme = pbp
 color = 1
 
 [-InputOutput::RequireBriefOpen]
+
+[Variables::ProhibitPunctuationVars]
+allow = $!
+
