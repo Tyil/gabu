@@ -3,4 +3,7 @@
 -sbl
 -ci=4
 -sot
+-mft=1
+-cab=0
+-boc
 
