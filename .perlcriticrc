@@ -1,9 +1,11 @@
-severity = 2
+severity = 1
 theme = pbp
 color = 1
 
-[-InputOutput::RequireBriefOpen]
-
 [Variables::ProhibitPunctuationVars]
 allow = $!
+
+[-InputOutput::RequireBriefOpen]
+[-Perl::Critic::Policy::CodeLayout::RequireTidyCode]
+[-ValuesAndExpressions::ProhibitInterpolationOfLiterals]
 
