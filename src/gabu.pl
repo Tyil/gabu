@@ -47,12 +47,13 @@ sub load_config
 		push @files, $ENV{XDG_CONFIG_HOME} . "/gabu.yaml";
 	}
 
-	push @files, (
+	push @files,
+		(
 		"$ENV{HOME}/.config/gabu.yaml",
 		"/usr/local/etc/gabu.yaml",
 		"/etc/gabu.yaml",
 		$Bin . "/../etc/gabu.yaml"
-	);
+		);
 
 	foreach my $file (@files) {
 		if (-f $file) {
@@ -180,8 +181,10 @@ while (1) {
 
 			# save the torrent file
 			open my $fh, ">", $file or do {
-				carp colored_message("red",
-					"Could not open filehandle at $file");
+				carp colored_message(
+					"red",
+					"Could not open filehandle at $file"
+				);
 				next;
 			};
 
