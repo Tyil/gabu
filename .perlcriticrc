@@ -8,4 +8,5 @@ allow = $!
 [-InputOutput::RequireBriefOpen]
 [-Perl::Critic::Policy::CodeLayout::RequireTidyCode]
 [-ValuesAndExpressions::ProhibitInterpolationOfLiterals]
+[-Miscellanea::RequireRcsKeywords]
 
