@@ -4,35 +4,36 @@ use strict;
 use utf8;
 use warnings;
 
-use Cwd;
+use Carp;
 use Date::Parse;
+use FindBin qw/$Bin/;
 use LWP::UserAgent;
 use Term::ANSIColor;
 use XML::RSS::Parser;
 use YAML::Tiny;
 
 # setup the perl environment
-$|++;
+our $VERSION = "1.3.0";
 
-binmode STDOUT, ":utf8";
+binmode STDOUT, ":encoding(utf8)";
 
 # globals
 my $yaml;
 
 # bind interrupt handlers
-$SIG{USR1} = \&load_config;
+local $SIG{USR1} = \load_config();
 
 # initial config load
-&load_config();
+load_config();
 
 # create a UA
 my $ua = LWP::UserAgent->new();
-$ua->agent("gabu/1.3.0");
+$ua->agent("gabu/$VERSION");
 
 # logging functions
-sub colored_message()
+sub colored_message
 {
-	my $color = shift;
+	my $color   = shift;
 	my $message = shift;
 
 	return color($color) . $message . color("reset") . "\n";
@@ -42,109 +43,116 @@ sub load_config
 {
 	my @files;
 
-	if (defined($ENV{XDG_CONFIG_HOME})) {
-		push(@files, $ENV{XDG_CONFIG_HOME} . "/gabu.yaml");
+	if (defined $ENV{XDG_CONFIG_HOME}) {
+		push @files, $ENV{XDG_CONFIG_HOME} . "/gabu.yaml";
 	}
 
-	push(@files, (
+	push @files,
+		(
 		"$ENV{HOME}/.config/gabu.yaml",
 		"/usr/local/etc/gabu.yaml",
 		"/etc/gabu.yaml",
-		Cwd::abs_path($0) . "/../etc/gabu.yaml"
-	));
+		$Bin . "/../etc/gabu.yaml"
+		);
 
 	foreach my $file (@files) {
 		if (-f $file) {
 			$yaml = YAML::Tiny->read($file);
 
-			print(&colored_message("white", "Loaded config at $file"));
+			print colored_message("white", "Loaded config at $file");
 
 			return;
 		}
 	}
 
-	print(&colored_message("bold red", "Could not find a configuration file:"));
+	print colored_message("bold red", "Could not find a configuration file:");
 
 	foreach my $file (@files) {
-		print("\t$file\n");
+		print "\t$file\n";
 	}
 
-	die();
+	croak;
 }
 
 while (1) {
+
 	# read timers
 	my %timers;
 	my $timer_file = $yaml->[0]->{timers} // "/var/lib/gabu/timers";
 
 	{
-		open (my $fh, "<", $timer_file) or do {
-			warn &colored_message("red", "Could not open $timer_file: $!");
+		open my $fh, "<", $timer_file or do {
+			carp colored_message("red", "Could not open $timer_file: $!");
 			last;
 		};
 
 		while (<$fh>) {
 			chomp;
 
-			my @megumin = split("\t", $_);
+			my @megumin = split;
 
-			$timers{$megumin[0]} = $megumin[1];
+			$timers{ $megumin[0] } = $megumin[1];
 		}
 
-		close($fh);
+		close $fh;
 	}
 
 	# go through all feeds
-	my @feeds = @{$yaml->[0]->{feeds}};
+	my @feeds = @{ $yaml->[0]->{feeds} };
 
 	foreach my $feed (@feeds) {
 		if ($yaml->[0]->{verbose}) {
-			print(&colored_message("blue", $feed->{url}));
+			print colored_message("blue", $feed->{url});
 		}
 
 		# fetch the rss feed
 		my $response = $ua->get($feed->{url});
 
 		if (!$response->is_success) {
-			warn(&colored_message("red", $response->status_line));
+			carp(colored_message("red", $response->status_line));
 		}
 
 		# parse the feed
 		my $parser = XML::RSS::Parser->new();
-		my $rss = $parser->parse_string($response->decoded_content());
+		my $rss    = $parser->parse_string($response->decoded_content());
 
 		if (!$rss) {
-			warn(&colored_message("red", $parser->errstr));
+			carp(colored_message("red", $parser->errstr));
 			next;
 		}
 
-		my $new_timer = $timers{$feed->{url}} // 0;
+		my $new_timer = $timers{ $feed->{url} } // 0;
 
 		foreach my $node ($rss->query("//item")) {
+
 			# skip all items which are before our current timestamp
 			my $current = str2time($node->query("pubDate")->text_content);
 
-			if (defined($timers{$feed->{url}}) && $current <= $timers{$feed->{url}}) {
+			if (defined($timers{ $feed->{url} })
+				&& $current <= $timers{ $feed->{url} })
+			{
 				next;
 			}
 
 			# keep track of new timestamp
-			$new_timer = $current if $current > $new_timer;
+			if ($current > $new_timer) {
+				$new_timer = $current;
+			}
 
 			# check current item against regexes
 			chomp(my $title = $node->query("title")->text_content);
 
 			if ($yaml->[0]->{verbose}) {
-				print(&colored_message("bright_white", " $title"));
+				print colored_message("bright_white", " $title");
 			}
 
-			my $found = 0;
-			my @regexes = @{$feed->{regexes}};
+			my $found   = 0;
+			my @regexes = @{ $feed->{regexes} };
 
 			foreach my $regex (@regexes) {
-				if ($title =~ m/$regex/gi) {
+				if ($title =~ m/$regex/gimsx) {
 					if ($yaml->[0]->{verbose}) {
-						print(&colored_message("green", "  $regex"));
+						print colored_message("green", "  $regex");
 					}
 
 					# mark this item as wanted
@@ -163,50 +171,51 @@ while (1) {
 			my $torrent = $ua->get($link);
 
 			if (!$torrent->is_success) {
-				warn(&colored_message("red", $torrent->status_line));
+				carp(colored_message("red", $torrent->status_line));
 				next;
 			}
 
 			# generate a safer filename
-			(my $filename = $title) =~ s/ //g;
+			(my $filename = $title) =~ s/ //msg;
 			my $file = "$yaml->[0]->{watchdir}/$filename.torrent";
 
 			# save the torrent file
-			open(my $fh, ">", $file);
-
-			if (!$fh) {
-				warn(&colored_message("red", "Could not open filehandle at $file"));
+			open my $fh, ">", $file or do {
+				carp colored_message(
+					"red",
+					"Could not open filehandle at $file"
+				);
 				next;
-			}
+			};
 
-			print $fh $torrent->decoded_content();
+			print {$fh} $torrent->decoded_content();
 
-			close($fh);
+			close $fh;
 
-			print(&colored_message("bold blue", "   $file"));
+			print colored_message("bold blue", "   $file");
 		}
 
 		# apply new timestamp to timers hash
-		$timers{$feed->{url}} = $new_timer;
+		$timers{ $feed->{url} } = $new_timer;
 	}
 
 	# save new timers
 	{
-		open (my $fh, ">", $timer_file) or do {
-			warn(&colored_message("red", "Could not open $timer_file: $!"));
+		open my $fh, ">", $timer_file or do {
+			carp(colored_message("red", "Could not open $timer_file: $!"));
 			last;
 		};
 
 		foreach my $timer (keys %timers) {
-			print $fh "$timer\t$timers{$timer}\n";
+			print {$fh} "$timer\t$timers{$timer}\n";
 		}
 
-		close($fh);
+		close $fh;
 	}
 
 	# wait a bit for the next run
 	if ($yaml->[0]->{timeout} == 0) {
-		exit(0);
+		exit 0;
 	}
 
 	sleep($yaml->[0]->{timeout});
