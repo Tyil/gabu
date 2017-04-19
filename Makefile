@@ -7,7 +7,7 @@ configuration:
 
 install: configuration
 	mkdir -p $(DESTDIR)/bin
-	install -m 755 sr/gabu.pl $(DESTDIR)/bin/gabu
+	install -m 755 src/gabu.pl $(DESTDIR)/bin/gabu
 
 remove:
 	rm $(DESTDIR)/bin/gabu
