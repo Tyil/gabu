@@ -3,6 +3,6 @@ perl:
   - "5.22"
   - "5.24"
 before_install:
-  - sudo apt update
-  - sudo apt install -y perlcritic perltidy
+  - sudo apt-get update
+  - sudo apt-get install -y perlcritic perltidy
 
