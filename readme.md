@@ -19,6 +19,15 @@ make install
 - `XML::RSS::Parser`
 - `YAML::Tiny`
 
+The easiest way to install these is by using `cpanm`. Refer to your
+distribution's documentation on how to get this installed if you do not have it
+yet. If you have it available, install them using the `cpanfile` provided with
+Gabu:
+
+```
+cpanm --installdeps --notest .
+```
+
 ## Configuration
 Edit the YAML file at `/etc/gabu.yaml` to your leisure. Most importantly, make
 sure you have a proper URL defined for the feed(s) you want to keep track of.
@@ -36,8 +45,8 @@ them appropriately, in this case as `\(`.
 
 ## Running
 Simply run `gabu` after setting up the configuration. If you did not run `make
-install`, you have to make sure the `gabu` file is executable with `chmod +x
-gabu`, then run it with `./gabu`.
+install`, you have to make sure the `gabu.pl` file is executable with `chmod +x
+src/gabu.pl`, then run it with `./src/gabu.pl`.
 
 ### Reloading
 You can reload the configuration without restarting gabu by sending a `SIGUSR1`
