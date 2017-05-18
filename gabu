@@ -168,16 +168,14 @@ while (1) {
 			}
 
 			# generate a safer filename
-			(my $filename = $title) =~ s/ //g;
+			(my $filename = $title) =~ s|[ /]+|_|g;
 			my $file = "$yaml->[0]->{watchdir}/$filename.torrent";
 
 			# save the torrent file
-			open(my $fh, ">", $file);
-
-			if (!$fh) {
-				warn(&colored_message("red", "Could not open filehandle at $file"));
+			open(my $fh, ">", $file) or do {
+				warn(&colored_message("red", "Could not open filehandle at $file: $!"));
 				next;
-			}
+			};
 
 			print $fh $torrent->decoded_content();
 
