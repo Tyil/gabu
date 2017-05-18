@@ -1,0 +1,4 @@
+*.tdy
+
+.*.sw? # vim swapfiles
+

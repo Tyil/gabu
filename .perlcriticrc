@@ -1,0 +1,12 @@
+severity = 1
+theme = pbp
+color = 1
+
+[Variables::ProhibitPunctuationVars]
+allow = $!
+
+[-InputOutput::RequireBriefOpen]
+[-Perl::Critic::Policy::CodeLayout::RequireTidyCode]
+[-ValuesAndExpressions::ProhibitInterpolationOfLiterals]
+[-Miscellanea::RequireRcsKeywords]
+
