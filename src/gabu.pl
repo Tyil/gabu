@@ -176,7 +176,7 @@ while (1) {
 			}
 
 			# generate a safer filename
-			(my $filename = $title) =~ s|[\s/]+|_|msg;
+			(my $filename = $title) =~ s/[\s\/]+/_/msgx;
 			my $file = "$yaml->[0]->{watchdir}/$filename.torrent";
 
 			# save the torrent file
