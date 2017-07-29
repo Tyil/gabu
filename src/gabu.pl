@@ -13,7 +13,7 @@ use XML::RSS::Parser;
 use YAML::Tiny;
 
 # setup the perl environment
-our $VERSION = "1.3.0";
+our $VERSION = "1.4.0";
 
 binmode STDOUT, ":encoding(utf8)";
 
@@ -167,12 +167,19 @@ while (1) {
 
 			# get the torrent
 			chomp(my $link = $node->query("link")->text_content);
+			my $torrent;
 
-			my $torrent = $ua->get($link);
+			# for magnets, get the link directly
+			if ($link =~ /^magnet/xms) {
+				$torrent = $link;
+			}
+			else {
+				$torrent = $ua->get($link);
 
-			if (!$torrent->is_success) {
-				carp(colored_message("red", $torrent->status_line));
-				next;
+				if (!$torrent->is_success) {
+					carp(colored_message("red", $torrent->status_line));
+					next;
+				}
 			}
 
 			# generate a safer filename
@@ -188,7 +195,13 @@ while (1) {
 				next;
 			};
 
-			print {$fh} $torrent->decoded_content();
+			if ($torrent =~ /^magnet/xms) {
+				printf {$fh} "d10:magnet-uri%s:%se\n", length $torrent,
+					$torrent;
+			}
+			else {
+				print {$fh} $torrent->decoded_content();
+			}
 
 			close $fh;
 
