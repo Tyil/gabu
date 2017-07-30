@@ -43,6 +43,11 @@ The `regexes` key for a given feed are directly dropped into Perl. As such, if
 you want to match certain characters literally, such as `(`, you must escape
 them appropriately, in this case as `\(`.
 
+Note that the regexes are tested with the `i` flag to make them case
+insensitive. The `x` flag is also applied, making whitespace insignificant (and
+allows for comments in the regex). If you need to match a space, you must make
+it a special character class, like `[ ]`.
+
 ## Running
 Simply run `gabu` after setting up the configuration. If you did not run `make
 install`, you have to make sure the `gabu.pl` file is executable with `chmod +x
